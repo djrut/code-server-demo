@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: code-server
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: code-server
+    networking.gke.io/managed-certificates: code-server
+spec:
+  backend:
+    serviceName: code-server-djrut-sandbox
+    servicePort: 8080
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: code-server-djrut-sandbox
+          servicePort: 8080

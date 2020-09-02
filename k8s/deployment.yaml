@@ -1,0 +1,59 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: bs
+  namespace: {KUBE_NAMESPACE}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels: 
+        app: bs
+    spec:     
+      containers: 
+      - name: bs
+        image: gcr.io/x-refinery-button-soup/{IMAGE_NAME}:{IMAGE_TAG}
+        ports:
+        - containerPort: {CONTAINER_PORT}
+        volumeMounts:
+        - name: creds-volume
+          mountPath: /etc/creds
+          readOnly: true
+        env:
+        - name: DANABOT_PROJECT_KEY
+          value: "{DANABOT_PROJECT_KEY}"
+        - name: DANABOT_PUBSUB_METRICS_TOPIC_KEY
+          value: "{DANABOT_PUBSUB_METRICS_TOPIC_KEY}"
+        - name: DANABOT_METRICS_TOPIC_KEY
+          value: "{DANABOT_METRICS_TOPIC_KEY}"
+        - name: SLACK_SIGNING_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: danabot-slack-creds
+              key: signing-secret
+        - name: SLACK_BOT_USER_OAUTH_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: danabot-slack-creds
+              key: oauth-token
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: "{GOOGLE_APPLICATION_CREDENTIALS}"
+        - name: TRELLO_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: danabot-trello-creds
+              key: api-key
+        - name: TRELLO_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: danabot-trello-creds
+              key: auth-token
+        - name: TRELLO_BOARD_ID
+          valueFrom:
+            secretKeyRef:
+              name: danabot-trello-creds
+              key: board-id
+      volumes:
+          - name: creds-volume
+            secret:
+              secretName: gcp-creds
