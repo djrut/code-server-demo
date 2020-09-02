@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-djrut-sandbox
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: code-server-djrut-sandbox
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: code-server-djrut-sandbox
+spec:
+  serviceName: "code-server-djrut-sandbox"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-server-djrut-sandbox 
+  template:
+    metadata:
+      labels:
+        app: code-server-djrut-sandbox
+    spec:
+      securityContext:
+          fsGroup: 1000
+      volumes:
+      - name: configmap-volume
+        configMap:
+          name: code-server-proxy
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: 8080
+        volumeMounts:
+        - mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          name: configmap-volume
+      - name: code-server-djrut-sandbox
+        image: codercom/code-server:3.5.0
+        args: ['--bind-addr=127.0.0.1:8090']
+        ports:
+        - containerPort: 8090
+        volumeMounts:
+        - name: djrut-sandbox-home
+          mountPath: /home/coder
+  volumeClaimTemplates:
+  - metadata:
+      name: djrut-sandbox-home
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi

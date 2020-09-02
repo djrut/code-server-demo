@@ -1,0 +1,15 @@
+apiVersion: networking.gke.io/v1beta1
+kind: ManagedCertificate
+metadata:
+  name: djrut-sandbox
+spec:
+  domains:
+    - djrut-sandbox.yoleus.com
+---
+apiVersion: networking.gke.io/v1beta1
+kind: ManagedCertificate
+metadata:
+  name: hal-sandbox
+spec:
+  domains:
+    - hal-sandbox.yoleus.com

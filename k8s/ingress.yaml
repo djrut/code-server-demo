@@ -4,15 +4,18 @@ metadata:
   name: code-server
   annotations:
     kubernetes.io/ingress.global-static-ip-name: code-server
-    networking.gke.io/managed-certificates: code-server
+    networking.gke.io/managed-certificates: "djrut-sandbox,hal-sandbox"
 spec:
-  backend:
-    serviceName: code-server-djrut-sandbox
-    servicePort: 8080
   rules:
-  - http:
+  - host: djrut-sandbox.yoleus.com
+    http:
       paths:
-      - path: /
-        backend:
+      - backend:
           serviceName: code-server-djrut-sandbox
+          servicePort: 8080
+  - host: hal-sandbox.yoleus.com
+    http:
+      paths:
+      - backend:
+          serviceName: code-server-hal-sandbox
           servicePort: 8080
