@@ -89,9 +89,24 @@ Note: the machine type "n1-standard-4" is used for demonstration purposes. In pr
 
 ## Apply K8S Manifests
 
+The first step is to specify the variables required for the templating engine to generate the K8S manifests. An example of this file can be found [here](demo.yaml).
+
+Example:
+
+```
+domain: yoleus.com
+static_ip_name: code-server
+home_drive_size: 1Gi
+environments:
+- djrut-sandbox
+- hal-sandbox
+```
+Generate and apply the manifests as follows, with the $CONFIG variable pointing your configuration yaml:
+
 ```bash
+export CONFIG=demo.yaml
 for template in $(ls templates); do                                                                                                                
-  pipenv run jinja2 templates/$template demo.yaml | kubectl apply -f -
+  pipenv run jinja2 templates/$template $CONFIG | kubectl apply -f -
 done
 ```
 
