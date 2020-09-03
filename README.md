@@ -31,7 +31,7 @@ Some key features of this deployment are:
 
 Templating requires pyyaml and jinja2-cli python packages. To install these into a clean virtual environment, ensure you are in project root and run:
 
-```bash
+```shell
 pip install pipenv
 pipenv --python 3.7
 pipenv install
@@ -39,7 +39,7 @@ pipenv install
 
 ## Enable APIs
 
-```bash
+```shell
 gcloud services enable \
   compute.googleapis.com \
   container.googleapis.com \
@@ -48,7 +48,7 @@ gcloud services enable \
 
 ## Reserve static IP
 
-```bash
+```shell
 gcloud compute addresses create code-server \                                                                                                      [master]
     --global \
     --ip-version ipv4
@@ -56,7 +56,7 @@ gcloud compute addresses create code-server \                                   
 
 Make a note of the IP address (used for DNS):
 
-```bash
+```shell
 gcloud compute addresses list \
     --filter="name=code-server" \
     --format="value(address)"
@@ -75,7 +75,7 @@ hal-sandbox     IN    A    34.120.27.101
 
 ## Provision K8S Cluster
 
-```bash
+```shell
 gke clusters create code-server-demo \
     --no-enable-autoupgrade \
     --region=us-central1 \
@@ -85,7 +85,7 @@ gke clusters create code-server-demo \
     --machine-type=n1-standard-4
 ```
 
-Note: the machine type "n1-standard-4" is used for demonstration purposes. In production deployments, select an appropriately sized machine type. This will depend on the a) number of user environments and b) the expected cpu/memory resource requirements of each environment. 
+_Note: the machine type "n1-standard-4" is used for demonstration purposes. In production deployments, select an appropriately sized machine type. This will depend on the a) number of user environments and b) the expected cpu/memory resource requirements of each environment._
 
 ## Apply K8S Manifests
 
@@ -93,7 +93,7 @@ The first step is to specify the variables required for the templating engine to
 
 Example:
 
-```
+```yaml
 domain: yoleus.com
 static_ip_name: code-server
 home_drive_size: 1Gi
@@ -101,9 +101,10 @@ environments:
 - djrut-sandbox
 - hal-sandbox
 ```
+
 Generate and apply the manifests as follows, with the $CONFIG variable pointing your configuration yaml:
 
-```bash
+```shell
 export CONFIG=demo.yaml
 for template in $(ls templates); do                                                                                                                
   pipenv run jinja2 templates/$template $CONFIG | kubectl apply -f -
@@ -116,15 +117,15 @@ done
 
 * Confirm Pods have "Running" status, e.g.:
 
-```bash
-$ kubectl get po                                                                                                                    [master]
+```shell
+$ kubectl get po                                                                                                                    
 NAME              READY   STATUS    RESTARTS   AGE
 djrut-sandbox-0   2/2     Running   0          3m37s
 hal-sandbox-0     2/2     Running   0          3m37s
 ```
 * Confirm ManagedCertificates has status "Active", e.g.:
 
-```bash
+```shell
 $ kubectl describe managedcertificate|egrep 'Domain:|Status'                                                                             
 Status:
   Certificate Status:  Active
@@ -140,14 +141,14 @@ Status:
 
 * Confirm backends are healthy
 
-```bash
+```shell
 $ kubectl describe ingress|grep ingress.kubernetes.io/backends:                                                                     
   ingress.kubernetes.io/backends:                    {"k8s-be-30759--ea814a4473ad1246":"HEALTHY","k8s-be-32338--ea814a4473ad1246":"HEALTHY","k8s-be-32558--ea814a4473ad1246":"HEALTHY"}
 ```
 
 * Confirm ingress is healthy (address field is populated):
 
-```bash
+```shell
 $ kubectl get ingress                                                                                                               [master]
 NAME          HOSTS                                             ADDRESS         PORTS   AGE
 code-server   djrut-sandbox.yoleus.com,hal-sandbox.yoleus.com   34.120.27.101   80      17m
@@ -157,7 +158,7 @@ code-server   djrut-sandbox.yoleus.com,hal-sandbox.yoleus.com   34.120.27.101   
 
 By default, GCLB terminates idle connections after 30s, which is problematic for applications that use long-lived web-sockets. It is recommended to increase this timeout to 24hrs, which can be done programmatically as follows:
 
-```bash
+```shell
 declare -a backends=($(gcloud compute backend-services list --format="value(name)"))
 for backend in $backends; do                                                                                                                       
   gcloud compute backend-services update $backend --global --timeout=86400 # Set timeout to 24hrs
@@ -170,7 +171,7 @@ The first time a new statefulset is provisioned, code-server automatically gener
 
 Obtain the password from each environment like this:
 
-```bash
+```shell
 export ENVIRONMENT=hal-sandbox                                                                                                    
 kubectl exec -it $ENVIRONMENT-0 -c $ENVIRONMENT cat /home/coder/.config/code-server/config.yaml|grep ^password|cut -d: -f2
 ``` 
@@ -189,7 +190,7 @@ The fix is to replace the apiVersion with "cloud.google.com/v1beta1". The exampl
 
 Apply as follows:
 
-```bash
+```shell
 kubectl apply -f iap/backend_config.yaml
 ```
 
@@ -197,16 +198,9 @@ When reaching the step "associate Service ports with your BackendConfig", there 
 
 Apply as follows, replacing the service name as needed:
 
-```bash
+```shell
 kubectl patch service djrut-sandbox --patch "$(cat iap/iap_patch.yaml)"
 ```
-
-
-
-
-
-
-
 
 
 
