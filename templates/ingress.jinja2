@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: code-server
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: {{ static_ip_name }}
+    networking.gke.io/managed-certificates: "{% for environment in environments -%}{{ environment }}{{ "," if not loop.last }}{% endfor -%}"
+spec:
+  rules:
+  {% for environment in environments -%}
+  - host: {{ environment }}.{{ domain }}
+    http:
+      paths:
+      - backend:
+          serviceName: {{ environment }}
+          servicePort: 8080
+  {% endfor %}

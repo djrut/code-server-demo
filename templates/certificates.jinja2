@@ -1,0 +1,11 @@
+---
+{% for environment in environments -%}
+apiVersion: networking.gke.io/v1beta1
+kind: ManagedCertificate
+metadata:
+  name: {{ environment }}
+spec:
+  domains:
+    - {{ environment }}.{{ domain }}
+{{ "---" if not loop.last }}
+{% endfor -%}

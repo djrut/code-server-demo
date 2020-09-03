@@ -1,7 +1,9 @@
+---
+{% for environment in environments -%}
 apiVersion: v1
 kind: Service
 metadata:
-  name: code-server-djrut-sandbox
+  name: {{ environment }}
 spec:
   type: NodePort
   ports:
@@ -9,22 +11,22 @@ spec:
     port: 8080
     targetPort: 8080
   selector:
-    app: code-server-djrut-sandbox
+    app: {{ environment }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: code-server-djrut-sandbox
+  name: {{ environment }}
 spec:
-  serviceName: "code-server-djrut-sandbox"
+  serviceName: "{{ environment }}"
   replicas: 1
   selector:
     matchLabels:
-      app: code-server-djrut-sandbox 
+      app: {{ environment }}
   template:
     metadata:
       labels:
-        app: code-server-djrut-sandbox
+        app: {{ environment }}
     spec:
       securityContext:
           fsGroup: 1000
@@ -45,19 +47,21 @@ spec:
         - mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
           name: configmap-volume
-      - name: code-server-djrut-sandbox
+      - name: {{ environment }}
         image: codercom/code-server:3.5.0
         args: ['--bind-addr=127.0.0.1:8090']
         ports:
         - containerPort: 8090
         volumeMounts:
-        - name: djrut-sandbox-home
+        - name: {{ environment }}-home
           mountPath: /home/coder
   volumeClaimTemplates:
   - metadata:
-      name: djrut-sandbox-home
+      name: {{ environment }}-home
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: ["ReadWriteOnce"]
       resources:
         requests:
-          storage: 1Gi
+          storage: {{ home_drive_size }}
+{{ "---" if not loop.last }}
+{% endfor -%}

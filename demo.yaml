@@ -1,0 +1,6 @@
+domain: yoleus.com
+static_ip_name: code-server
+home_drive_size: 1Gi
+environments:
+- djrut-sandbox
+- hal-sandbox
