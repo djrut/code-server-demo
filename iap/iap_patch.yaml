@@ -1,0 +1,3 @@
+metadata:
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
