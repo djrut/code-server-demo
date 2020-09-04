@@ -12,7 +12,7 @@ Some key features of this deployment are:
   - This is facilitated by the use of [Jinja2](https://jinja.palletsprojects.com/en/2.11.x/) templating, to provide an automated and declarative approach to rolling-out user environments.
 - **Security**
   - Security is enforced with two layers of authentication at both perimeter and container.
-  - Ingress layer: Google Identity Aware Proxy ([IAP](https://cloud.google.com/iap)) is utilized to restrict access to environments at the perimeter, based on user identity (OAuth). This prevents malicious actors from attempting to compromise the code-server container.
+  - Ingress layer: Google Identity Aware Proxy ([IAP](https://cloud.google.com/iap)) is utilized to restrict access to environments at the perimeter, based on user identity (OAuth). This prevents malicious actors from attempting to compromise the code-server container. 2FA can also be enabled for an additional layer of security.
   - Container layer: HTTP Basic Authentication with automatically generated strong password that persists container restarts.
     
 
@@ -167,7 +167,7 @@ done
 
 ## Obtain code-server password
 
-The first time a new statefulset is provisioned, code-server automatically generates a password and stores this in the config.yaml file. This password persists container restarts.
+The first time a new statefulset is provisioned, code-server automatically generates a password and stores this in the config.yaml file. This password persists container restarts due to the config directory residing on a persistent disk.
 
 Obtain the password from each environment like this:
 
@@ -175,6 +175,8 @@ Obtain the password from each environment like this:
 export ENVIRONMENT=hal-sandbox                                                                                                    
 kubectl exec -it $ENVIRONMENT-0 -c $ENVIRONMENT cat /home/coder/.config/code-server/config.yaml|grep ^password|cut -d: -f2
 ``` 
+
+**IMPORTANT**: Ensure that this password is encrypted and securely transmitted to the end-user (for example by encrypting using [GPG](https://gnupg.org/)).
 
 ## Secure perimeter with IAP
 
@@ -202,7 +204,20 @@ Apply as follows, replacing the service name as needed:
 kubectl patch service djrut-sandbox --patch "$(cat iap/iap_patch.yaml)"
 ```
 
+This concludes the configuration process, at this point IAP should be intercepting requests to environments.
 
+When users access an environment for the first time, the expected flow is as follows:
+
+
+* User will be presented with a Google OAuth consent screen.
+* Assuming that the user identity selected has the necessary IAM [permissions](https://cloud.google.com/iap/docs/managing-access#roles) (roles/iap.httpsResourceAccessor) at the IAP layer, the user will then be presented with a second authentication step at the container level, at which point the user will enter the password generated [previously](#obtain-code-server-password). 
+* In most cases, users will save this password to a browser keychain to allow seamless logins without requiring the password to be entered each time. 
+
+## Future work
+
+* Customization of source container image with additional development tools
+* NFS mounted project folder (e.g. [Rook](https://rook.io/) or Google [Filestore](https://cloud.google.com/community/tutorials/gke-filestore-dynamic-provisioning)) to allow project files to be shared between multiple environments.
+* Automated backups - PD snapshot (preferred) or upload to object storage
 
 
 
