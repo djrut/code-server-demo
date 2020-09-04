@@ -67,8 +67,8 @@ gcloud compute addresses list \
 Using the address generated above, populate your domain's DNS zone file with A records for each environment, for example:
 
 ```
-djrut-sandbox   IN    A    34.120.27.101
-hal-sandbox     IN    A    34.120.27.101
+environment-a   IN    A    34.120.27.101
+environment-b   IN    A    34.120.27.101
 ...
 ```
 
@@ -89,23 +89,23 @@ _Note: the machine type "n1-standard-4" is used for demonstration purposes. In p
 
 ## Apply K8S Manifests
 
-The first step is to specify the variables required for the templating engine to generate the K8S manifests. An example of this file can be found [here](demo.yaml).
+The first step is to specify the variables required for the templating engine to generate the K8S manifests. An example of this file can be found [here](example.yaml).
 
 Example:
 
 ```yaml
-domain: yoleus.com
+domain: kermit.com
 static_ip_name: code-server
 home_drive_size: 1Gi
 environments:
-- djrut-sandbox
-- hal-sandbox
+- environment-a
+- environment-b
 ```
 
 Generate and apply the manifests as follows, with the $CONFIG variable pointing your configuration yaml:
 
 ```shell
-export CONFIG=demo.yaml
+export CONFIG=your_config.yaml
 for template in $(ls templates); do                                                                                                                
   pipenv run jinja2 templates/$template $CONFIG | kubectl apply -f -
 done
@@ -120,8 +120,8 @@ done
 ```shell
 $ kubectl get po                                                                                                                    
 NAME              READY   STATUS    RESTARTS   AGE
-djrut-sandbox-0   2/2     Running   0          3m37s
-hal-sandbox-0     2/2     Running   0          3m37s
+environment-a-0   2/2     Running   0          3m37s
+environment-b-0   2/2     Running   0          3m37s
 ```
 * Confirm ManagedCertificates has status "Active", e.g.:
 
@@ -130,12 +130,12 @@ $ kubectl describe managedcertificate|egrep 'Domain:|Status'
 Status:
   Certificate Status:  Active
   Domain Status:
-    Domain:     djrut-sandbox.yoleus.com
+    Domain:     environment-a.kermit.com
     Status:     Active
 Status:
   Certificate Status:  Active
   Domain Status:
-    Domain:     hal-sandbox.yoleus.com
+    Domain:     environment-b.kermit.com
     Status:     Active
 ```
 
@@ -150,8 +150,8 @@ $ kubectl describe ingress|grep ingress.kubernetes.io/backends:
 
 ```shell
 $ kubectl get ingress                                                                                                               [master]
-NAME          HOSTS                                             ADDRESS         PORTS   AGE
-code-server   djrut-sandbox.yoleus.com,hal-sandbox.yoleus.com   34.120.27.101   80      17m
+NAME          HOSTS                                               ADDRESS         PORTS   AGE
+code-server   environment-a.kermit.com,environment-b.kermit.com   34.120.27.101   80      17m
 ```
 
 ## Increase backend service timeout
@@ -172,7 +172,7 @@ The first time a new statefulset is provisioned, code-server automatically gener
 Obtain the password from each environment like this:
 
 ```shell
-export ENVIRONMENT=hal-sandbox                                                                                                    
+export ENVIRONMENT=environment-a                                                                                                    
 kubectl exec -it $ENVIRONMENT-0 -c $ENVIRONMENT cat /home/coder/.config/code-server/config.yaml|grep ^password|cut -d: -f2
 ``` 
 
@@ -201,7 +201,7 @@ When reaching the step "associate Service ports with your BackendConfig", there 
 Apply as follows, replacing the service name as needed:
 
 ```shell
-kubectl patch service djrut-sandbox --patch "$(cat iap/iap_patch.yaml)"
+kubectl patch service environment-a --patch "$(cat iap/iap_patch.yaml)"
 ```
 
 This concludes the configuration process, at this point IAP should be intercepting requests to environments.
